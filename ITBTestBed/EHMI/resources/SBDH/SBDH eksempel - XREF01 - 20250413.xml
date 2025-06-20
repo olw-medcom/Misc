@@ -37,7 +37,7 @@
                 <InstanceIdentifier>urn:www.digst.dk:profile:sdn-emergence</InstanceIdentifier>
                 <Identifier>dk-messaging-procid</Identifier>
             </Scope>
-			<!-- MedCom messaging scope -->
+			<!-- MedCom messaging scope --> 
             <Scope>
                 <Type>SENDERID</Type>
                 <InstanceIdentifier>8851000016006</InstanceIdentifier>

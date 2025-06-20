@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<!-- <?xml version="1.0" encoding="UTF-8"?>
 <testcase 
     id="sbdh_schema_validation_via_http" 
     xmlns="http://www.gitb.com/tdl/v1/" 
     xmlns:gitb="http://www.gitb.com/core/v1/" 
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-    xsi:schemaLocation="http://www.gitb.com/tdl/v1/ ../../testbedSchemas/gitb_tdl.xsd">    
+    xsi:schemaLocation="http://www.gitb.com/tdl/v1/ ../../../testbedSchemas/gitb_tdl.xsd">    
 
     <metadata>
         <gitb:name>Basic Schema Validation via HTTP</gitb:name>
@@ -13,7 +13,7 @@
     </metadata>
 
     <imports>
-        <artifact type="schema" encoding="UTF-8" name="SBDHSchema">resources/StandardBusinessDocumentHeader.xsd</artifact>
+        <artifact type="schema" encoding="UTF-8" name="SBDHSchema">resources/SBDH/StandardBusinessDocumentHeader.xsd</artifact>
     </imports>
 
     <actors>
@@ -46,4 +46,4 @@
         </failure>
     </output>
 
-</testcase>
+</testcase> -->

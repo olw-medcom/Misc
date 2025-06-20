@@ -1,0 +1,7 @@
+Step 1: Make sure the publication-request.json exists and that the parameters is valid. Note you do not need to change the version or the path.
+Step 1a: If this is the first time, make sure you put in a webhook in the GitHub Repo to allow the build.fhir.org server and zulip to pick up on new changes
+
+Step 2: Tag through GitHub Desktop https://docs.github.com/en/desktop/managing-commits/managing-tags-in-github-desktop
+Follow the proper versioning semantics (e.g. v.1.2.3)
+
+Step 3: Run GitHub Actions
