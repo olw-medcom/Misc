@@ -38,6 +38,11 @@
         </receive>
 
         <log>"EHMI SBDH message received"</log>
+        
+        <verify handler="XmlValidator" desc="Basic Test: Validate EHMI SBDH XML Schema">
+            <input name="xml">$receiveEHMIMsg{request}{body}</input>
+            <input name="xsd">$EHMISBDHSchema</input>
+        </verify>
 
         <assign to="binaryContent" source="$receiveEHMIMsg{request}{body}">
             //sbdhNS:BinaryContent/text()
@@ -47,26 +52,54 @@
             <input name="input">$binaryContent</input>
         </process>
 
-        <!-- See if we can make an if or switch step, where we use the value of the attribute mimeType on the binaryContent to see if it's json or xml -->
-        <!-- This below is the thing for JSON -->
-        
-        <assign to="parameters{expectedMessageType}" source="$decodedBinaryContent">
-            /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:eventCoding/f:code/@value
+
+        <assign to="binaryContentType" source="$receiveEHMIMsg{request}{body}">
+            //sbdhNS:BinaryContent/@mimeType    
         </assign>
-        <log>"Message type:" || $parameters{expectedMessageType}</log>
+        <log>"Binary content type:" || $binaryContentType</log>
+        
+        <if desc="If binary content is XML">
+            <cond>$binaryContentType = "application/fhir+xml"</cond>
+            <then>
+                <log>"Binary content is XML"</log>
 
-        <process output="schematronTemplate" handler="TemplateProcessor">
-            <input name="parameters">$parameters</input>
-            <input name="template">$schematron</input>
-            <input name="syntax">'freemarker'</input>
-        </process>
+                <assign to="parameters{expectedMessageType}" source="$decodedBinaryContent">
+                    /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:eventCoding/f:code/@value
+                </assign>
+                <log>"Message type:" || $parameters{expectedMessageType}</log>
+                
+                <process output="schematronTemplate" handler="TemplateProcessor">
+                    <input name="parameters">$parameters</input>
+                    <input name="template">$schematron</input>
+                    <input name="syntax">'freemarker'</input>
+                </process>
+                
+                <verify handler="XmlValidator" desc="Validate values based on binary content">
+                    <input name="xml">$receiveEHMIMsg{request}{body}</input>
+                    <input name="xsd">$EHMISBDHSchema</input>
+                    <input name="schematron">$schematronTemplate</input>
+                </verify>
+                
+                <exit success="true"></exit>
+            </then>
+            <else>
+                <log>"Binary content is not XML"</log>
+            </else>
+        </if>
+        
+        <if desc="If binary content is JSON">
+            <cond>$binaryContentType = "application/fhir+json"</cond>
+            <then>
+                <log>"Binary content is JSON"</log>
+                <!-- TODO: Check if the Assign can be done the same way? How equivelant is xPATH and jsonPATH I wonder -->
+                <exit success="true"></exit>
+            </then>
+            <else>
+                <log>"Binary content is not JSON"</log>
+            </else>
+        </if>
 
-        <verify handler="XmlValidator" desc="Basic Test: Validate SBDH Schema">
-            <input name="xml">$receiveEHMIMsg{request}{body}</input>
-            <input name="xsd">$EHMISBDHSchema</input>
-            <input name="schematron">$schematronTemplate</input>
-        </verify>
-
+        <exit desc="Binary Content Type was neither XML or JSON. Failure" success="false"/>
     </steps>
 
     <output>
