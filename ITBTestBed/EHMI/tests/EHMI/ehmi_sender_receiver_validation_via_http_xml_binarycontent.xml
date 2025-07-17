@@ -7,20 +7,25 @@
     xsi:schemaLocation="http://www.gitb.com/tdl/v1/ ../../../testbedSchemas/gitb_tdl.xsd">    
 
     <metadata>
-        <gitb:name>Basic EHMI Schema Validation</gitb:name>
+        <gitb:name>Basic EHMI Schema Validation XML</gitb:name>
         <gitb:version>1.0</gitb:version>
         <gitb:description>The most basic test: Ensuring that the data conforms to the schema</gitb:description>
     </metadata>
 
     <imports>
         <artifact type="schema" encoding="UTF-8" name="EHMISBDHSchema">resources/EHMI/ehmiSbdhStandardBusinessDocumentHeader.xsd</artifact>
-        <artifact type="binary" encoding="UTF-8" name="Schematrons">resources/EHMI/schematrons/test.sch</artifact>
+        <artifact type="binary" encoding="UTF-8" name="schematron">resources/EHMI/schematrons/customAssertions.sch</artifact>
     </imports>
 
     <actors>
         <gitb:actor id="EHMICorrespondent" name="EHMI Correspondent" role="SUT"/>
         <gitb:actor id="SimulatedEHMICorrespondent" name="Simulated EHMI Correspondent"/>
     </actors>
+
+    <namespaces>
+        <ns prefix="sbdhNS">http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader</ns>
+        <ns prefix="f">http://hl7.org/fhir</ns>
+    </namespaces>
 
     <steps>
         <assign to="httpHeaders{Content-Type}">"text/plain"</assign>
@@ -33,12 +38,33 @@
         </receive>
 
         <log>"EHMI SBDH message received"</log>
-        <log>$receiveEHMIMsg{request}{body}{StandardBusinessDocumentHeader}{HeaderVersion}</log>
 
-        <verify handler="XmlValidator" desc="Basic Test: Validate Schema">
+        <assign to="binaryContent" source="$receiveEHMIMsg{request}{body}">
+            //sbdhNS:BinaryContent/text()
+        </assign>
+
+        <process id="decodeBinaryContent" handler="Base64Processor" output="decodedBinaryContent" operation="decode">
+            <input name="input">$binaryContent</input>
+        </process>
+
+        <!-- See if we can make an if or switch step, where we use the value of the attribute mimeType on the binaryContent to see if it's json or xml -->
+        <!-- This below is the thing for JSON -->
+        
+        <assign to="parameters{expectedMessageType}" source="$decodedBinaryContent">
+            /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:eventCoding/f:code/@value
+        </assign>
+        <log>"Message type:" || $parameters{expectedMessageType}</log>
+
+        <process output="schematronTemplate" handler="TemplateProcessor">
+            <input name="parameters">$parameters</input>
+            <input name="template">$schematron</input>
+            <input name="syntax">'freemarker'</input>
+        </process>
+
+        <verify handler="XmlValidator" desc="Basic Test: Validate SBDH Schema">
             <input name="xml">$receiveEHMIMsg{request}{body}</input>
             <input name="xsd">$EHMISBDHSchema</input>
-            <input name="schematron">$Schematrons</input>
+            <input name="schematron">$schematronTemplate</input>
         </verify>
 
     </steps>
