@@ -24,4 +24,5 @@
     </actors>
     
     <testcase id="ehmi_schema_validation"></testcase>
+    <testcase id="test"></testcase>
 </testsuite>

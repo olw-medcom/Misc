@@ -7,6 +7,7 @@
     xsi:schemaLocation="http://www.gitb.com/tdl/v1/ ../../../testbedSchemas/gitb_tdl.xsd">    
 
     <metadata>
+        <!-- TODO: Redo the name and description -->
         <gitb:name>Basic EHMI Schema Validation XML</gitb:name>
         <gitb:version>1.0</gitb:version>
         <gitb:description>The most basic test: Ensuring that the data conforms to the schema</gitb:description>
@@ -14,7 +15,7 @@
 
     <imports>
         <artifact type="schema" encoding="UTF-8" name="EHMISBDHSchema">resources/EHMI/ehmiSbdhStandardBusinessDocumentHeader.xsd</artifact>
-        <artifact type="binary" encoding="UTF-8" name="schematron">resources/EHMI/schematrons/customAssertions.sch</artifact>
+        <artifact type="binary" encoding="UTF-8" name="schematron">resources/EHMI/schematrons/ehmiSBDHAssertions.sch</artifact>
     </imports>
 
     <actors>
@@ -37,11 +38,10 @@
             <input name="headers">$httpHeaders</input>
         </receive>
 
-        <log>"EHMI SBDH message received"</log>
-        
-        <verify handler="XmlValidator" desc="Basic Test: Validate EHMI SBDH XML Schema">
+        <verify handler="XmlValidator" desc="Validate XML structure">
             <input name="xml">$receiveEHMIMsg{request}{body}</input>
             <input name="xsd">$EHMISBDHSchema</input>
+            <input name="stopOnXsdErrors">true()</input>
         </verify>
 
         <assign to="binaryContent" source="$receiveEHMIMsg{request}{body}">
@@ -56,50 +56,69 @@
         <assign to="binaryContentType" source="$receiveEHMIMsg{request}{body}">
             //sbdhNS:BinaryContent/@mimeType    
         </assign>
-        <log>"Binary content type:" || $binaryContentType</log>
         
         <if desc="If binary content is XML">
             <cond>$binaryContentType = "application/fhir+xml"</cond>
             <then>
-                <log>"Binary content is XML"</log>
-
-                <assign to="parameters{expectedMessageType}" source="$decodedBinaryContent">
+                <assign to="parameters{expectedDocumentIdentifierStandard}" source="$decodedBinaryContent">
                     /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:eventCoding/f:code/@value
                 </assign>
-                <log>"Message type:" || $parameters{expectedMessageType}</log>
                 
+                <assign to="parameters{expectedMessageDefinitionVersion}" source="$decodedBinaryContent">
+                    replace(/f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:definition/@value,
+                        '.*[dD]efinition([0-9.]+)$',
+                        '$1')
+                </assign>
+
+                <assign to="parameters{expectedStructureDefinition}" source="$decodedBinaryContent">
+                    tokenize( (/f:Bundle/f:meta/f:profile/@value)[1], '/')[last()]
+                </assign>
+
+                <assign to="parameters{expectedPatientCPR}" source="$decodedBinaryContent">
+                    /f:Bundle/f:entry/f:resource/f:Patient/f:identifier[f:system/@value = 'urn:oid:1.2.208.176.1.2']/f:value/@value
+                </assign>
+                
+                <assign to="parameters{expectedSenderId}" source="$decodedBinaryContent">
+                    /f:Bundle/f:entry/f:resource/*
+                    [concat(local-name(), '/', f:id/@value) = /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:sender/f:reference/@value]
+                    /f:identifier[f:system/@value = 'urn:oid:1.2.208.176.1.1']/f:value/@value
+                </assign>
+                
+                <assign to="parameters{expectedReceiverId}" source="$decodedBinaryContent">
+                    /f:Bundle/f:entry/f:resource/*
+                    [concat(local-name(), '/', f:id/@value) = /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:destination/f:receiver/f:reference/@value]
+                    /f:identifier[f:system/@value = 'urn:oid:1.2.208.176.1.1']/f:value/@value
+                </assign>
+                
+                <assign to="parameters{expectedMessageIdentifier}" source="$decodedBinaryContent">
+                    /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:id/@value
+                </assign>
+                
+                <assign to="parameters{expectedMessageEnvelopeIdentifier}" source="$decodedBinaryContent">
+                    /f:Bundle/f:id/@value
+                </assign>
+
                 <process output="schematronTemplate" handler="TemplateProcessor">
                     <input name="parameters">$parameters</input>
                     <input name="template">$schematron</input>
                     <input name="syntax">'freemarker'</input>
                 </process>
-                
-                <verify handler="XmlValidator" desc="Validate values based on binary content">
-                    <input name="xml">$receiveEHMIMsg{request}{body}</input>
-                    <input name="xsd">$EHMISBDHSchema</input>
-                    <input name="schematron">$schematronTemplate</input>
-                </verify>
-                
-                <exit success="true"></exit>
             </then>
-            <else>
-                <log>"Binary content is not XML"</log>
-            </else>
         </if>
         
         <if desc="If binary content is JSON">
             <cond>$binaryContentType = "application/fhir+json"</cond>
             <then>
                 <log>"Binary content is JSON"</log>
-                <!-- TODO: Check if the Assign can be done the same way? How equivelant is xPATH and jsonPATH I wonder -->
-                <exit success="true"></exit>
+                <!-- TODO: Assign all the parameters with jsonPath instead of xPath -->
             </then>
-            <else>
-                <log>"Binary content is not JSON"</log>
-            </else>
         </if>
-
-        <exit desc="Binary Content Type was neither XML or JSON. Failure" success="false"/>
+        
+        <verify handler="XmlValidator" desc="Validate content">
+            <input name="xml">$receiveEHMIMsg{request}{body}</input>
+            <input name="xsd">$EHMISBDHSchema</input>
+            <input name="schematron">$schematronTemplate</input>
+        </verify>
     </steps>
 
     <output>
