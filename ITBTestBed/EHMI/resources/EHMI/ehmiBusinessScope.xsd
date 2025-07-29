@@ -20,7 +20,7 @@
 		</xs:sequence>
 	</xs:group>
 	<xs:element name="ScopeInformation" type="xs:anyType" abstract="true"/>
-	<xs:element name="CorrelationInformation" type="CorrelationInformation" substitutionGroup="ScopeInformation"/>
+	<xs:element name="CorrelationInformation" type="CorrelationInformation" substitutionGroup="ScopeInformation" />
 	<xs:complexType name="CorrelationInformation">
 		<xs:sequence>
 			<xs:element name="RequestingDocumentCreationDateTime" type="xs:dateTime" minOccurs="1"/>

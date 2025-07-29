@@ -13,16 +13,15 @@
     </metadata>
 
     <actors>
-        <gitb:actor id="EHMICorrespondent">
-            <gitb:name>EHMI Correspondent</gitb:name>
-            <gitb:desc>The sender and/or receiver of EHMI SBDH messages through the EHMI network</gitb:desc>
+        <gitb:actor id="EHMIMSHSendingSystem">
+            <gitb:name>EHMI MSH Sending System</gitb:name>
+            <gitb:desc>The MSH sender of EHMI SBDH messages through the EHMI network</gitb:desc>
         </gitb:actor>
-        <gitb:actor id="SimulatedEHMICorrespondent">
-            <gitb:name>Simulated EHMI Correspondent</gitb:name>
-            <gitb:desc>A simulated sender and/or receiver of EHMI SBDH messages through the EHMI network</gitb:desc>
+        <gitb:actor id="SimulatedEHMIMSHReceivingSystem">
+            <gitb:name>Simulated EHMI MSH Receiving System</gitb:name>
+            <gitb:desc>The MSH Receiver of EHMI SBDH Messages through the EHMI network</gitb:desc>
         </gitb:actor>
     </actors>
     
-    <testcase id="ehmi_schema_validation"></testcase>
-    <testcase id="test"></testcase>
+    <testcase id="ehmi_msh_sending_system_test"></testcase>
 </testsuite>
