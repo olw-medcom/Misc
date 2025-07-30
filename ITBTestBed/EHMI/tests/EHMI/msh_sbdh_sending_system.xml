@@ -29,8 +29,8 @@
 
     <steps>
         <assign to="httpHeaders{Content-Type}">"text/plain"</assign>
-        <receive id="receiveEHMIMsg" desc="Receive EHMI SBDH Message through HTTP" from="EHMIMSHSendingSystem" to="SimulatedEHMIMSHReceivingSystem" handler="HttpMessagingV2">
-            <input name="uriExtension">"/receiveEHMISBDH-schema-validation"</input>
+        <receive id="receiveEHMIMsg" desc="EHMI MSH SBDH Message" from="EHMIMSHSendingSystem" to="SimulatedEHMIMSHReceivingSystem" handler="HttpMessagingV2">
+            <input name="uriExtension">"/receive-msh-sbdh-ehmi-msg"</input>
             <input name="method">"POST"</input>
             <input name="status">200</input>
             <input name="body">"Received"</input>
@@ -50,7 +50,14 @@
         <process id="decodeBinaryContent" handler="Base64Processor" output="decodedBinaryContent" operation="decode">
             <input name="input">$binaryContent</input>
         </process>
-
+        
+        <!-- TODO: We want to call a FHIR validator I think on the decodedBinaryContent, if the type is fhir ofc 
+            I think we can do it with the <send id="fhirValidation" stopOnError="true" desc="Call FHIR Server to validate content structure" handler="HttpMessagingV2">
+             <input name="uri">"hapifhirserver.dk/validate"</input>
+             <input name="method">"POST"</input>
+             </send>
+        -->
+        
 
         <assign to="binaryContentType" source="$receiveEHMIMsg{request}{body}">
             //sbdhNS:BinaryContent/@mimeType    
@@ -96,12 +103,6 @@
                 <assign to="parameters{expectedMessageEnvelopeIdentifier}" source="$decodedBinaryContent">
                     /f:Bundle/f:id/@value
                 </assign>
-
-                <process output="schematronTemplate" handler="TemplateProcessor">
-                    <input name="parameters">$parameters</input>
-                    <input name="template">$schematron</input>
-                    <input name="syntax">'freemarker'</input>
-                </process>
             </then>
         </if>
         
@@ -109,9 +110,24 @@
             <cond>$binaryContentType = "application/fhir+json"</cond>
             <then>
                 <log>"Binary content is JSON"</log>
+                <process id="test" handler="$DOMAIN{processingServiceAddress}" operation="uppercase">
+                    <input name="input">"Hejsa"</input>
+                </process>
+                <log>$test{output}</log>
+                <process handler="JsonPointerProcessor" operation="process" output="test">
+                    <input name="content">$decodedBinaryContent</input>
+                    <input name="pointer">"/id"</input>
+                </process>
+
                 <!-- TODO: Assign all the parameters with jsonPath instead of xPath -->
             </then>
         </if>
+        
+        <process output="schematronTemplate" handler="TemplateProcessor">
+            <input name="parameters">$parameters</input>
+            <input name="template">$schematron</input>
+            <input name="syntax">'freemarker'</input>
+        </process>
         
         <verify handler="XmlValidator" desc="Validate content">
             <input name="xml">$receiveEHMIMsg{request}{body}</input>

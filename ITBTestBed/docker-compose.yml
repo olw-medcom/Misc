@@ -25,6 +25,8 @@ services:
        - CALLBACK_ROOT_URL=http://localhost:8080/itbsrv
       ports:
        - "8080:8080"
+      extra_hosts:
+         - "host.docker.internal:host-gateway"
    gitb-ui:
       image: isaitb/gitb-ui
       container_name: itb-ui
