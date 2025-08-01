@@ -4,11 +4,11 @@ volumes:
 
 services:
    gitb-redis:
-      image: isaitb/gitb-redis
+      image: isaitb/gitb-redis:nightly
       container_name: itb-redis
       restart: unless-stopped
    gitb-mysql:
-      image: isaitb/gitb-mysql
+      image: isaitb/gitb-mysql:nightly
       container_name: itb-mysql
       restart: unless-stopped
       volumes:
@@ -18,7 +18,7 @@ services:
        interval: 3s
        retries: 50
    gitb-srv:
-      image: isaitb/gitb-srv
+      image: isaitb/gitb-srv:nightly
       container_name: itb-srv
       restart: unless-stopped
       environment:
@@ -28,7 +28,7 @@ services:
       extra_hosts:
          - "host.docker.internal:host-gateway"
    gitb-ui:
-      image: isaitb/gitb-ui
+      image: isaitb/gitb-ui:nightly
       container_name: itb-ui
       restart: unless-stopped
       ports:

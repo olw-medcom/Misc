@@ -110,15 +110,14 @@
             <cond>$binaryContentType = "application/fhir+json"</cond>
             <then>
                 <log>"Binary content is JSON"</log>
-                <process id="test" handler="$DOMAIN{processingServiceAddress}" operation="uppercase">
-                    <input name="input">"Hejsa"</input>
+                <process id="test" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+                    <input name="fhirResource">$decodedBinaryContent</input>
+                    <input name="fhirResourceType">$binaryContentType</input>
+                    <input name="fhirPathExpression">"id"</input>
+                    <input name="fhirVersion">"R4"</input>
                 </process>
                 <log>$test{output}</log>
-                <process handler="JsonPointerProcessor" operation="process" output="test">
-                    <input name="content">$decodedBinaryContent</input>
-                    <input name="pointer">"/id"</input>
-                </process>
-
+                
                 <!-- TODO: Assign all the parameters with jsonPath instead of xPath -->
             </then>
         </if>

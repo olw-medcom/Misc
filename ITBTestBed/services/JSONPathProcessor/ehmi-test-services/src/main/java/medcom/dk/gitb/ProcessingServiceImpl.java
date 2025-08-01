@@ -4,6 +4,15 @@ import com.gitb.core.ValueEmbeddingEnumeration;
 import com.gitb.ps.Void;
 import com.gitb.ps.*;
 import com.gitb.tr.TestResultType;
+
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
+import ca.uhn.fhir.parser.IParser;
+
+import java.util.Map;
+
+import org.hl7.fhir.instance.model.api.IBase;
+import org.hl7.fhir.instance.model.api.IPrimitiveType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +26,17 @@ public class ProcessingServiceImpl implements ProcessingService {
 
     /** Logger. */
     private static final Logger LOG = LoggerFactory.getLogger(ProcessingServiceImpl.class);
+
+    private static final Map<String,FhirContext> CTX_CACHE = Map.of(
+        "R4",  initCtx(FhirContext.forR4()),
+        "R4B", initCtx(FhirContext.forR4B()),
+        "R5",  initCtx(FhirContext.forR5())
+    );
+
+    private static FhirContext initCtx(FhirContext c){
+        c.setValidationSupport(new DefaultProfileValidationSupport(c));
+        return c;
+    }
 
     @Autowired
     private Utils utils = null;
@@ -50,22 +70,54 @@ public class ProcessingServiceImpl implements ProcessingService {
      */
     @Override
     public ProcessResponse process(ProcessRequest processRequest) {
-        LOG.info("Received 'process' command from test bed for session [{}]", processRequest.getSessionId());
-        ProcessResponse response = new ProcessResponse();
-        response.setReport(utils.createReport(TestResultType.SUCCESS));
-        String operation = processRequest.getOperation();
+        var operation = processRequest.getOperation();
         if (operation == null) {
             throw new IllegalArgumentException("No processing operation provided");
         }
-        String input = utils.getRequiredString(processRequest.getInput(), "input");
-        String result = switch (operation) {
-            case "uppercase" -> input.toUpperCase();
-            case "lowercase" -> input.toLowerCase();
-            default -> throw new IllegalArgumentException(String.format("Unexpected operation [%s].", operation));
+
+        return switch (operation) {
+            case "FHIRPath" -> {
+                var fhirResource = utils.getRequiredString(processRequest.getInput(), "fhirResource");
+                var fhirResourceType = utils.getRequiredString(processRequest.getInput(), "fhirResourceType");
+                var fhirPathExpression = utils.getRequiredString(processRequest.getInput(), "fhirPathExpression");
+                var fhirVersion = utils.getOptionalString(processRequest.getInput(), "fhirVersion").orElse("R4");
+
+                FhirContext fhirContext = CTX_CACHE.getOrDefault(fhirVersion, CTX_CACHE.get("R4"));
+                IParser parser = switch (fhirResourceType) {
+                    case "application/fhir+json" -> fhirContext.newJsonParser();
+                    case "application/fhir+xml" -> fhirContext.newXmlParser();
+                    default -> throw new IllegalArgumentException(String.format("Unsupported FHIR resource type [%s]. Should either be 'application/fhir+json' or 'application/fhir+xml'", fhirResourceType));
+                };
+                var matches = fhirContext.newFhirPath().evaluate(parser.parseResource(fhirResource), fhirPathExpression, IBase.class);
+
+                if (matches.isEmpty()) {
+                    ProcessResponse response = new ProcessResponse();
+                    response.setReport(utils.createReport(TestResultType.FAILURE));
+                    response.getOutput().add(utils.createAnyContentSimple("output", "No matches found for the FHIRPath expression.", ValueEmbeddingEnumeration.STRING));
+                    yield response;
+                }
+
+                if (matches.size() > 1) {
+                    ProcessResponse response = new ProcessResponse();
+                    response.setReport(utils.createReport(TestResultType.FAILURE));
+                    response.getOutput().add(utils.createAnyContentSimple("output", "Multiple matches found for the FHIRPath expression.", ValueEmbeddingEnumeration.STRING));
+                    yield response;
+                }
+                var m = matches.get(0);
+                String result = "";
+                if (m instanceof IPrimitiveType<?> p) {
+                    result = p.getValueAsString();
+                } else {
+                    result = parser.encodeToString(m);
+                }
+
+                var response = new ProcessResponse();
+                response.setReport(utils.createReport(TestResultType.SUCCESS));
+                response.getOutput().add(utils.createAnyContentSimple("output", result, ValueEmbeddingEnumeration.STRING));
+                yield response;
+            }
+            default -> throw new IllegalArgumentException(String.format("Operation not supported [%s].", operation));
         };
-        response.getOutput().add(utils.createAnyContentSimple("output", result, ValueEmbeddingEnumeration.STRING));
-        LOG.info("Completed operation [{}]. Input was [{}], output was [{}].", operation, input, result);
-        return response;
     }
 
     /**
