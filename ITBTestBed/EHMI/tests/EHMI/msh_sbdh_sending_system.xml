@@ -51,76 +51,92 @@
             <input name="input">$binaryContent</input>
         </process>
         
-        <!-- TODO: We want to call a FHIR validator I think on the decodedBinaryContent, if the type is fhir ofc 
-            I think we can do it with the <send id="fhirValidation" stopOnError="true" desc="Call FHIR Server to validate content structure" handler="HttpMessagingV2">
-             <input name="uri">"hapifhirserver.dk/validate"</input>
-             <input name="method">"POST"</input>
-             </send>
-        -->
-        
-
         <assign to="binaryContentType" source="$receiveEHMIMsg{request}{body}">
             //sbdhNS:BinaryContent/@mimeType    
         </assign>
         
-        <if desc="If binary content is XML">
-            <cond>$binaryContentType = "application/fhir+xml"</cond>
-            <then>
-                <assign to="parameters{expectedDocumentIdentifierStandard}" source="$decodedBinaryContent">
-                    /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:eventCoding/f:code/@value
-                </assign>
-                
-                <assign to="parameters{expectedMessageDefinitionVersion}" source="$decodedBinaryContent">
-                    replace(/f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:definition/@value,
-                        '.*[dD]efinition([0-9.]+)$',
-                        '$1')
-                </assign>
+        <!-- Find values from BinaryContent -->
+        <process id="expectedDocumentIdentifierStandard" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+            <input name="fhirResource">$decodedBinaryContent</input>
+            <input name="fhirResourceType">$binaryContentType</input>
+            <input name="fhirPathExpression">"entry.first().resource.ofType(MessageHeader).event.code"</input>
+        </process>
 
-                <assign to="parameters{expectedStructureDefinition}" source="$decodedBinaryContent">
-                    tokenize( (/f:Bundle/f:meta/f:profile/@value)[1], '/')[last()]
-                </assign>
-
-                <assign to="parameters{expectedPatientCPR}" source="$decodedBinaryContent">
-                    /f:Bundle/f:entry/f:resource/f:Patient/f:identifier[f:system/@value = 'urn:oid:1.2.208.176.1.2']/f:value/@value
-                </assign>
-                
-                <assign to="parameters{expectedSenderId}" source="$decodedBinaryContent">
-                    /f:Bundle/f:entry/f:resource/*
-                    [concat(local-name(), '/', f:id/@value) = /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:sender/f:reference/@value]
-                    /f:identifier[f:system/@value = 'urn:oid:1.2.208.176.1.1']/f:value/@value
-                </assign>
-                
-                <assign to="parameters{expectedReceiverId}" source="$decodedBinaryContent">
-                    /f:Bundle/f:entry/f:resource/*
-                    [concat(local-name(), '/', f:id/@value) = /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:destination/f:receiver/f:reference/@value]
-                    /f:identifier[f:system/@value = 'urn:oid:1.2.208.176.1.1']/f:value/@value
-                </assign>
-                
-                <assign to="parameters{expectedMessageIdentifier}" source="$decodedBinaryContent">
-                    /f:Bundle/f:entry[1]/f:resource/f:MessageHeader/f:id/@value
-                </assign>
-                
-                <assign to="parameters{expectedMessageEnvelopeIdentifier}" source="$decodedBinaryContent">
-                    /f:Bundle/f:id/@value
-                </assign>
-            </then>
-        </if>
+        <assign to="parameters{expectedDocumentIdentifierStandard}" source="$decodedBinaryContent">
+            $expectedDocumentIdentifierStandard{output}
+        </assign>
         
-        <if desc="If binary content is JSON">
-            <cond>$binaryContentType = "application/fhir+json"</cond>
-            <then>
-                <log>"Binary content is JSON"</log>
-                <process id="test" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
-                    <input name="fhirResource">$decodedBinaryContent</input>
-                    <input name="fhirResourceType">$binaryContentType</input>
-                    <input name="fhirPathExpression">"id"</input>
-                    <input name="fhirVersion">"R4"</input>
-                </process>
-                <log>$test{output}</log>
-                
-                <!-- TODO: Assign all the parameters with jsonPath instead of xPath -->
-            </then>
-        </if>
+        <process id="expectedMessageDefinitionVersion" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+            <input name="fhirResource">$decodedBinaryContent</input>
+            <input name="fhirResourceType">$binaryContentType</input>
+            <input name="fhirPathExpression">"entry.first().resource.ofType(MessageHeader).definition.replaceMatches('.*[dD]efinition([0-9.]+)$', '$1')"</input>
+        </process>
+        
+        <assign to="parameters{expectedMessageDefinitionVersion}" source="$decodedBinaryContent">
+            $expectedMessageDefinitionVersion{output}
+        </assign>
+
+        <process id="expectedStructureDefinition" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+            <input name="fhirResource">$decodedBinaryContent</input>
+            <input name="fhirResourceType">$binaryContentType</input>
+            <input name="fhirPathExpression">"meta.profile[0].split('/').last()"</input>
+        </process>
+        
+        <assign to="parameters{expectedStructureDefinition}" source="$decodedBinaryContent">
+            $expectedStructureDefinition{output}
+        </assign>
+        
+        <process id="expectedPatientCPR" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+            <input name="fhirResource">$decodedBinaryContent</input>
+            <input name="fhirResourceType">$binaryContentType</input>
+            <input name="fhirPathExpression">"entry.resource.ofType(Patient).identifier.where(system = 'urn:oid:1.2.208.176.1.2').value"</input>
+        </process>
+        
+        <assign to="parameters{expectedPatientCPR}" source="$decodedBinaryContent">
+            $expectedPatientCPR{output}
+        </assign>
+        
+        <process id="expectedSenderId" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+            <input name="fhirResource">$decodedBinaryContent</input>
+            <input name="fhirResourceType">$binaryContentType</input>
+            <input name="fhirPathExpression">"entry[0].resource.sender.resolve().identifier.where(system = 'urn:oid:1.2.208.176.1.1').value"</input>
+        </process>
+        
+        <assign to="parameters{expectedSenderId}" source="$decodedBinaryContent">
+            $expectedSenderId{output}
+        </assign>
+        
+        <process id="expectedReceiverId" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+            <input name="fhirResource">$decodedBinaryContent</input>
+            <input name="fhirResourceType">$binaryContentType</input>
+            <input name="fhirPathExpression">"entry[0].resource.destination.receiver.resolve().identifier.where(system = 'urn:oid:1.2.208.176.1.1').value"</input>
+        </process>
+        
+        <assign to="parameters{expectedReceiverId}" source="$decodedBinaryContent">
+            $expectedReceiverId{output}
+        </assign>
+        
+        <process id="expectedMessageIdentifier" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+            <input name="fhirResource">$decodedBinaryContent</input>
+            <input name="fhirResourceType">$binaryContentType</input>
+            <input name="fhirPathExpression">"entry[0].resource.id"</input>
+        </process>
+        
+        <assign to="parameters{expectedMessageIdentifier}" source="$decodedBinaryContent">
+            $expectedMessageIdentifier{output}
+        </assign>
+        
+        <process id="expectedMessageEnvelopeIdentifier" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
+            <input name="fhirResource">$decodedBinaryContent</input>
+            <input name="fhirResourceType">$binaryContentType</input>
+            <input name="fhirPathExpression">"id"</input>
+        </process>
+        
+        <assign to="parameters{expectedMessageEnvelopeIdentifier}" source="$decodedBinaryContent">
+            $expectedMessageEnvelopeIdentifier{output}
+        </assign>
+
+        <!-- Test -->
         
         <process output="schematronTemplate" handler="TemplateProcessor">
             <input name="parameters">$parameters</input>
