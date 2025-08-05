@@ -1,5 +1,6 @@
 #!/bin/sh
 ./schematronFiles/sch2xslt.sh EHMI/resources/EHMI/schematrons/ehmiSBDHSendingSystemAssertions.sch
+./schematronFiles/sch2xslt.sh EHMI/resources/EHMI/schematrons/ehmiSBDHReceivingSystemAssertions.sch
 rm -f ./EHMI_testbed.zip
 cd EHMI
 zip -rq ../EHMI_testbed.zip .

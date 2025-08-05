@@ -214,7 +214,15 @@
     
     <!-- TODO: We need a new test when it's a response, but I think that needs to be another test in another schematron -->
     <!-- TODO: When we make the schematron for a response we need to assert that the expectedResponseDateTime is not present -->
-    
+
+    <rule context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope/sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']/sbdhNS:BusinessService">
+      <assert test="sbdhNS:BusinessServiceName = 'EHMI-ReceiptAcknowledgement-Request'"
+              flag="fatal"
+              id="BusinessScopeReceiptRequestAssertion-05">
+        BusinessServiceName must be 'EHMI-ReceiptAcknowledgement-Request'.
+      </assert>
+    </rule>
+
   </pattern>
-  
+
 </schema>

@@ -13,7 +13,7 @@
     </metadata>
 
     <imports>
-        <artifact type="schema" encoding="UTF-8" name="EHMISBDHSchema">resources/EHMI/ehmiSbdhStandardBusinessDocumentHeader.xsd</artifact>
+        <artifact type="schema" encoding="UTF-8" name="EHMI_SBDH_schema">resources/EHMI/ehmiSbdhStandardBusinessDocumentHeader.xsd</artifact>
         <artifact type="binary" name="schematron">resources/EHMI/schematrons/ehmiSBDHSendingSystemAssertions.xslt</artifact>
     </imports>
 
@@ -39,7 +39,7 @@
 
         <verify handler="XmlValidator" desc="Validate XML structure">
             <input name="xml">$receiveEHMIMsg{request}{body}</input>
-            <input name="xsd">$EHMISBDHSchema</input>
+            <input name="xsd">$EHMI_SBDH_schema</input>
             <input name="stopOnXsdErrors">true()</input>
         </verify>
 
@@ -146,7 +146,7 @@
         
         <verify handler="XmlValidator" desc="Validate content">
             <input name="xml">$receiveEHMIMsg{request}{body}</input>
-            <input name="xsd">$EHMISBDHSchema</input>
+            <input name="xsd">$EHMI_SBDH_schema</input>
             <input name="schematron">$schematronTemplate</input>
             <input name="schematronType">'xslt'</input>
         </verify>

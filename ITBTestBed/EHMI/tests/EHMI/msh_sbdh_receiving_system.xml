@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testcase 
+    id="ehmi_msh_receiving_system_test" 
+    xmlns="http://www.gitb.com/tdl/v1/" 
+    xmlns:gitb="http://www.gitb.com/core/v1/" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://www.gitb.com/tdl/v1/ ../../../testbedSchemas/gitb_tdl.xsd">    
+    
+    <metadata>
+        <gitb:name>MSH SBDH Receiving System Test</gitb:name>
+        <gitb:version>1.0</gitb:version>
+        <gitb:description>Tests an EHMI SBDH XML document for an MSH Receiving System</gitb:description>
+    </metadata>
+    
+    <imports>
+        <artifact type="schema" encoding="UTF-8" name="EHMI_SBDH_schema">resources/EHMI/ehmiSbdhStandardBusinessDocumentHeader.xsd</artifact>
+        <artifact type="binary" name="schematron">resources/EHMI/schematrons/ehmiSBDHReceivingSystemAssertions.xslt</artifact>
+        <artifact type="binary" encoding="UTF-8" name="valid_SBDH_hco_xml">resources/EHMI/validEHMISBDHMessages/homecareobsBinaryContentIsXML.xml</artifact>
+    </imports>
+    
+    <actors>
+        <gitb:actor id="EHMIMSHReceivingSystem" name="EHMI MSH Receiving System" role="SUT"/>
+        <gitb:actor id="SimulatedEHMIMSHSendingSystem" name="Simulated EHMI MSH Sending System"/>
+    </actors>
+    
+    <namespaces>
+        <ns prefix="sbdhNS">http://www.unece.org/cefact/namespaces/StandardBusinessDocumentHeader</ns>
+        <ns prefix="f">http://hl7.org/fhir</ns>
+    </namespaces>
+    
+    <steps>
+        <!-- TODO: The user starts the test, and gets a message they are to use. The ITB send a message to the user
+        Then the user transforms it and creates a response
+        The ITB waits for the user to post that message here
+        Then we assert on the relevant receiving/response parameters -->
+             
+     <!-- TODO: Before sending the user the valid message, change some things so that it's unique each time such as 
+             the dates in the business scopes, or some of the Id's in the scopes -->
+             
+     <!-- TODO: ASK OLE: How do we want to provide the message to the user? I guess we should sent it to them over the wire? ITB supports domibus so we could utilize that
+      We could also use a simple http call?  -->
+             
+             
+        <!-- TODO: ASK OLE: Is there value in testing that all of the data (all scopes, all document identification) also matches? -->
+        
+        <!-- NOTE: We only change stuff in the reliable messaging scope as that is the focus of this test -->
+        
+        <process output="requestingDocumentCreationDateTimeMS" handler="TokenGenerator" operation="timestamp"/>
+        <process output="requestingDocumentCreationDateTime" handler="TokenGenerator" operation="timestamp">
+            <input name="time">$requestingDocumentCreationDateTimeMS</input>
+            <input name="format">"yyyy-MM-dd'T'HH:mm:ss'Z'"</input>
+        </process>
+        <process output="expectedResponseDateTime" handler="TokenGenerator" operation="timestamp">
+            <input name="time">$requestingDocumentCreationDateTimeMS</input>
+            <input name="diff">600000</input> <!-- 10 minutes in milliseconds -->
+            <input name="format">"yyyy-MM-dd'T'HH:mm:ss'Z'"</input>
+        </process>
+
+        <assign to="parameters{requestingDocumentCreationDateTime}">$requestingDocumentCreationDateTime</assign>
+        <assign to="parameters{expectedResponseDateTime}">$expectedResponseDateTime</assign>
+        
+        <process output="requestingDocumentInstanceIdentifier" handler="TokenGenerator" operation="uuid"/>
+        
+        <assign to="parameters{requestingDocumentInstanceIdentifier}">$requestingDocumentInstanceIdentifier</assign>
+
+        <process output="valid_SBDH_hco_xml" handler="TemplateProcessor">
+            <input name="parameters">$parameters</input>
+            <input name="template">$valid_SBDH_hco_xml</input>
+            <input name="syntax">'freemarker'</input>
+        </process>            
+ 
+        <assign to="params{xml}">$valid_SBDH_hco_xml</assign>            
+        <assign to="contentTypes{xml}">"application/xml"</assign>
+ 
+        <process desc="MSH SBDH XML Message" hidden="false" handler="DisplayProcessor">
+            <input name="parameters">$params</input>
+            <input name="contentTypes">$contentTypes</input>
+        </process>
+        
+        <assign to="httpHeaders{Content-Type}">"text/plain"</assign>
+        <receive id="receiveEHMIResponseMsg" desc="EHMI MSH SBDH Message" from="EHMIMSHReceivingSystem" to="SimulatedEHMIMSHSendingSystem" handler="HttpMessagingV2">
+            <input name="uriExtension">"/receive-msh-sbdh-ehmi-response-msg"</input>
+            <input name="method">"POST"</input>
+            <input name="status">200</input>
+            <input name="body">"Received"</input>
+            <input name="headers">$httpHeaders</input>
+        </receive>
+        
+        <verify handler="XmlValidator" desc="Validate XML">
+            <input name="xml">$receiveEHMIResponseMsg{request}{body}</input>
+            <input name="xsd">$EHMI_SBDH_schema</input>
+            <input name="stopOnXsdErrors">true()</input>
+        </verify>
+        
+        <!-- Test -->
+        
+        <process output="schematronTemplate" handler="TemplateProcessor">
+            <input name="parameters">$parameters</input>
+            <input name="template">$schematron</input>
+            <input name="syntax">'freemarker'</input>
+        </process>
+        
+        <verify handler="XmlValidator" desc="Validate content">
+            <input name="xml">$receiveEHMIResponseMsg{request}{body}</input>
+            <input name="xsd">$EHMI_SBDH_schema</input>
+            <input name="schematron">$schematronTemplate</input>
+            <input name="schematronType">'xslt'</input>
+        </verify>
+    </steps>
+    
+    <output>
+        <success>
+            <default>"Test session succeeded."</default>
+        </success>
+        <failure>
+            <default>"Test session failed. Refer to the report for further details."</default>
+        </failure>
+    </output>
+    
+</testcase>

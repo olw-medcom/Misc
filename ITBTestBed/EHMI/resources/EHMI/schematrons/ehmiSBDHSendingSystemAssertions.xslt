@@ -918,7 +918,7 @@
 
    <!--RULE -->
    <xsl:template match="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope"
-                 priority="1002"
+                 priority="1003"
                  mode="M16">
       <svrl:fired-rule xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
                        context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope"/>
@@ -943,7 +943,7 @@
    </xsl:template>
    <!--RULE -->
    <xsl:template match="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope/sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']"
-                 priority="1001"
+                 priority="1002"
                  mode="M16">
       <svrl:fired-rule xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
                        context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope/sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']"/>
@@ -968,7 +968,7 @@
    </xsl:template>
    <!--RULE -->
    <xsl:template match="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope/sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']/sbdhNS:CorrelationInformation"
-                 priority="1000"
+                 priority="1001"
                  mode="M16">
       <svrl:fired-rule xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
                        context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope/sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']/sbdhNS:CorrelationInformation"/>
@@ -1002,6 +1002,31 @@
                </xsl:attribute>
                <svrl:text>
         ExpectedResponseDateTime must be within 10 minutes of RequestingDocumentCreationDateTime.
+      </svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+      <xsl:apply-templates select="*|comment()|processing-instruction()" mode="M16"/>
+   </xsl:template>
+   <!--RULE -->
+   <xsl:template match="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope/sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']/sbdhNS:BusinessService"
+                 priority="1000"
+                 mode="M16">
+      <svrl:fired-rule xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                       context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope/sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']/sbdhNS:BusinessService"/>
+      <!--ASSERT -->
+      <xsl:choose>
+         <xsl:when test="sbdhNS:BusinessServiceName = 'EHMI-ReceiptAcknowledgement-Request'"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="sbdhNS:BusinessServiceName = 'EHMI-ReceiptAcknowledgement-Request'">
+               <xsl:attribute name="id">BusinessScopeReceiptRequestAssertion-05</xsl:attribute>
+               <xsl:attribute name="flag">fatal</xsl:attribute>
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-select-full-path"/>
+               </xsl:attribute>
+               <svrl:text>
+        BusinessServiceName must be 'EHMI-ReceiptAcknowledgement-Request'.
       </svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>

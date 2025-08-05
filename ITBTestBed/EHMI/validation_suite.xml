@@ -17,11 +17,22 @@
             <gitb:name>EHMI MSH Sending System</gitb:name>
             <gitb:desc>The MSH sender of EHMI SBDH messages through the EHMI network</gitb:desc>
         </gitb:actor>
+        <gitb:actor id="EHMIMSHReceivingSystem">
+            <gitb:name>EHMI MSH Receiving System</gitb:name>
+            <gitb:desc>The MSH receiver of EHMI SBDH messages through the EHMI network</gitb:desc>
+        </gitb:actor>
         <gitb:actor id="SimulatedEHMIMSHReceivingSystem">
             <gitb:name>Simulated EHMI MSH Receiving System</gitb:name>
             <gitb:desc>The MSH Receiver of EHMI SBDH Messages through the EHMI network</gitb:desc>
         </gitb:actor>
+        <gitb:actor id="SimulatedEHMIMSHSendingSystem">
+            <gitb:name>Simulated EHMI MSH Sending System</gitb:name>
+            <gitb:desc>The MSH Sender of EHMI SBDH Messages through the EHMI network</gitb:desc>
+        </gitb:actor>
     </actors>
     
+    <!-- TODO: ASK OLE: Har vi brug for en receiving test hvor der er uoverenstemmelse mellem eksempelvis Scopes og Binary Content hvor vi så forventer at de retunere en
+    fejl besked? Altså vil vi gerne have at leverandørerne tester for at beskeden faktisk hænger sammen i scopes og document identification?-->
     <testcase id="ehmi_msh_sending_system_test"></testcase>
+    <testcase id="ehmi_msh_receiving_system_test"></testcase>
 </testsuite>
