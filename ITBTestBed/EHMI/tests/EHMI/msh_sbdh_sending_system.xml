@@ -55,7 +55,6 @@
             //sbdhNS:BinaryContent/@mimeType    
         </assign>
         
-        <!-- Find values from BinaryContent -->
         <process id="expectedDocumentIdentifierStandard" handler="$DOMAIN{processingServiceAddress}" operation="FHIRPath">
             <input name="fhirResource">$decodedBinaryContent</input>
             <input name="fhirResourceType">$binaryContentType</input>

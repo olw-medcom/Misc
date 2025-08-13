@@ -31,8 +31,17 @@
         </gitb:actor>
     </actors>
     
-    <!-- TODO: ASK OLE: Har vi brug for en receiving test hvor der er uoverenstemmelse mellem eksempelvis Scopes og Binary Content hvor vi så forventer at de retunere en
-    fejl besked? Altså vil vi gerne have at leverandørerne tester for at beskeden faktisk hænger sammen i scopes og document identification?-->
+    <!-- TODO: AFTER OLE: We want a negative SBDH ACk if we send an invalid SBDH to them, they should return a negative ebbp-signal message. 
+         Which is valid-->
     <testcase id="ehmi_msh_sending_system_test"></testcase>
     <testcase id="ehmi_msh_receiving_system_test"></testcase>
+    <!-- TODO: We need the following tests:
+    - A test where we act as Corner3 and verify that if we don't send an SBDH ack, that they resend it with new identifier and timestamp?
+         
+    - A HCO test where we act as Corner3 and verify contents of their corner 2 SBDH msg. Corner 2 -> Corner 3.
+    - A HCO test where we act as Corner2 and send them a valid SBDH and verify their SBDH ack (ebbp-signal).
+    - A HCO test where we act as Corner2 and send them an invalid SBDH and verify their SBDH negative ack (ebbp-signal).
+    - The same exact three tests as above just with FHIR acknowledgement instead. In time we will test it also with HCO.
+    -->
+    
 </testsuite>

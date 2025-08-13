@@ -29,7 +29,6 @@
     </rule>
   </pattern>
   
-  <!-- TODO: TELL OLE: The FhirPath in the IG documentation is wrong -->
   <pattern name="Check DocumentIdentification TypeVersion conformance to the MessageHeader Definition element">
     <rule context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:DocumentIdentification/sbdhNS:TypeVersion">
       <assert test="string() = '${expectedMessageDefinitionVersion}'" flag="fatal" id="DocumentIdentificationAssertion-02">
@@ -57,7 +56,12 @@
   </pattern>
   
   
-  <!-- TELL OLE: I have not followed Ole's recommendation here, as I think it should point to the actual structuredefinition -->
+  <!-- TODO AFTER TALKING WITH OLE:
+  1. Point to the Bundle/MessageHeader/eventCoding/code.value instead of the profile meta data
+  2. Update the SBDH IG to include the correct code (homecareobservation-message) from the terminology code system
+  3. Optional update the EHMI terminology event code system. Write that our convention/best-practice
+      is to take the structuredefinition name and remove the medcom- prefix
+   -->
   <pattern name="Check BusinessScope DocumentID InstanceIdentifier conforms to the values found in BinaryContent">
     <rule context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope">
       <assert test="sbdhNS:Scope[sbdhNS:Type = 'DOCUMENTID']" flag="fatal" id="BusinessScopeDocumentIDAssertion-01">
@@ -144,7 +148,7 @@
     </rule>
   </pattern>
   
-  <!-- TODO: TELL OLE: The Example has hidden characters (it goes to a new line between the <InstanceIdentifier> tag) -->
+  <!-- TODO: AFTER OLE: If there is hidden characters give a warning. But let the test pass otherwise. This is for all examples  -->
   <pattern name="Check BusinessScope MessageEnvelopeIdentifier is the id from the BinaryContent">
     <rule context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope">
       <assert test="sbdhNS:Scope[sbdhNS:Type = 'MESSAGEENVELOPEIDENTIFIER']" flag="fatal" id="BusinessScopeMessageEnvelopeIdentifierAssertion-01">
@@ -159,9 +163,13 @@
     </rule>
   </pattern>
   
-  <!-- TODO: ASK OLE: When the DocumentIdentification Standard type is ebbp-signals we need to assert a lot more scopes, I think we need an entirely new schematron and test for that specifically -->
+  <!-- TODO: AFTER OLE: EBBP-SIGNALS is the SBDH ACK that we need to test for. For every message passing through EHMI, it always needs to request an
+    acknolwedgement. And it will then receive an acknolwedgement in the form of a EBBP-SIGNAL (which we need to make an entire test for)
+    Then if the FHIR standard requires a FHIR ack message to be sent. That has to also be sent through EHMI.
+    And upon sending the FHIR ack the ebbp-signal ack will also be created.
+    So for one message, we create 2 ebbp-signal ack and one fhir ack.
+  -->
   
-  <!-- TODO: ASK OLE: When there is a designated postfix-value for a message standard. We need to test that it is in there. But how do I know when the standard has a postfix-value -->
   <pattern name="Check BusinessScope StatisticalInformation is a valid MedCom monitoring id">
     <rule context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope">
       <assert test="sbdhNS:Scope[sbdhNS:Type = 'StatisticalInformation']" flag="fatal" id="BusinessScopeStatisticalInformationAssertion-01">
@@ -176,9 +184,11 @@
     </rule>
   </pattern>
   
-  <!-- TODO: ASK OLE: I think there needs to be another test here if it's intended for XDS-metadata? -->
+  <!-- TODO: AFTER OLE: We need a completely seperate test for an SBDH that is also to be sent to the XDS metadata
+    We need to validate the XDS scope and then instead of sdn-emergence it should be dds-emergence
+    We need to validate that if it's dds-emergence there also needs to be an XDS metadata scope
+  -->
   
-  <!-- TODO: ASK OLE: Do we want to use normalize-space everywhere to ignore padding or newlines etc. so that a tag such as <InstanceIdentifier>' Request'</InstanceIdentifier> is just read as 'Request' without the leading space -->
   <pattern name="Check BusinessScope Reliable Messaging Receipt Ack is setup correctly">
     <rule context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope">
       <assert test="sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']" flag="fatal" id="BusinessScopeReceiptRequestAssertion-01">
@@ -209,12 +219,10 @@
       
     </rule>
     
-    <!-- TODO: ASK OLE: Is CorrelationInformation required? If so we should change the xsd -->
+    <!-- TODO: AFTER OLE: All the MedCom scopes are required always. See if we can incorporate it in the xsd schema otherwise just
+    test it here with xPath
+    -->
     
-    
-    <!-- TODO: We need a new test when it's a response, but I think that needs to be another test in another schematron -->
-    <!-- TODO: When we make the schematron for a response we need to assert that the expectedResponseDateTime is not present -->
-
     <rule context="sbdhNS:StandardBusinessDocumentHeader/sbdhNS:BusinessScope/sbdhNS:Scope[sbdhNS:Type = 'EHMI-ReceiptAcknowledgement']/sbdhNS:BusinessService">
       <assert test="sbdhNS:BusinessServiceName = 'EHMI-ReceiptAcknowledgement-Request'"
               flag="fatal"

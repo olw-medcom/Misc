@@ -37,14 +37,8 @@
      <!-- TODO: Before sending the user the valid message, change some things so that it's unique each time such as 
              the dates in the business scopes, or some of the Id's in the scopes -->
              
-     <!-- TODO: ASK OLE: How do we want to provide the message to the user? I guess we should sent it to them over the wire? ITB supports domibus so we could utilize that
-      We could also use a simple http call?  -->
+        <!-- TODO: AFTER OLE: When we provide SBDH message to the user, we will provide it through an endpoint they can call to get it  -->
              
-             
-        <!-- TODO: ASK OLE: Is there value in testing that all of the data (all scopes, all document identification) also matches? -->
-        
-        <!-- NOTE: We only change stuff in the reliable messaging scope as that is the focus of this test -->
-        
         <process output="requestingDocumentCreationDateTimeMS" handler="TokenGenerator" operation="timestamp"/>
         <process output="requestingDocumentCreationDateTime" handler="TokenGenerator" operation="timestamp">
             <input name="time">$requestingDocumentCreationDateTimeMS</input>
